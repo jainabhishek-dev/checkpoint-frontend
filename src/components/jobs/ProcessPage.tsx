@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -155,6 +155,17 @@ export default function ProcessPage() {
     ...pages.flatMap((p) => p.findings),
     ...docFindings,
   ];
+
+  // Auto-select all valid findings as soon as processing completes.
+  useEffect(() => {
+    if (phase === "done") {
+      const validIds = allFindings
+        .filter((f) => f.review_status === "valid")
+        .map((f) => f.id);
+      setSelectedFindings(new Set(validIds));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   function toggleFinding(id: number) {
     setSelectedFindings((prev) => {
@@ -318,7 +329,7 @@ export default function ProcessPage() {
                   finding={f}
                   selected={selectedFindings.has(f.id)}
                   onToggle={toggleFinding}
-                  showCheckbox={phase === "done"}
+                  showCheckbox={phase === "done" || phase === "partial"}
                   checkpointMap={checkpointMap}
                 />
               ))}
@@ -426,7 +437,7 @@ function PageCard({
                   finding={f}
                   selected={selectedFindings.has(f.id)}
                   onToggle={onToggle}
-                  showCheckbox={isDone && f.review_status === "valid"}
+                  showCheckbox={isDone}
                   checkpointMap={checkpointMap}
                 />
               ))

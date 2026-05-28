@@ -124,7 +124,7 @@ function PageSection({
           {imageId && (
             <div className="w-72 flex-shrink-0 border-r border-slate-100">
               <img
-                src={`https://drive.google.com/thumbnail?id=${imageId}&sz=w400`}
+                src={`https://drive.google.com/thumbnail?id=${imageId}&sz=w1600`}
                 alt={`Page ${page}`}
                 className="w-full h-auto"
                 loading="lazy"

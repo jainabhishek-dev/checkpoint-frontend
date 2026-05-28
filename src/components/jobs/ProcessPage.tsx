@@ -422,11 +422,19 @@ function FindingRow({
         <Loader2 size={14} className="text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-mono text-slate-500 truncate mb-0.5">"{finding.quote}"</p>
-        <p className="text-sm text-slate-700">{finding.issue}</p>
-        <p className="text-xs text-indigo-600 mt-0.5">{finding.suggestion}</p>
+        <p className="text-xs font-mono text-slate-500 truncate mb-0.5">
+          <span className="not-italic font-semibold text-slate-500 mr-1">Quote:</span>"{finding.quote}"
+        </p>
+        <p className="text-sm text-slate-700">
+          <span className="text-xs font-semibold text-slate-500 mr-1">Error:</span>{finding.issue}
+        </p>
+        <p className="text-xs text-indigo-600 mt-0.5">
+          <span className="font-semibold text-slate-500 mr-1">Suggestion:</span>{finding.suggestion}
+        </p>
         {finding.review_comment && (
-          <p className="text-xs text-slate-400 mt-1 italic">{finding.review_comment}</p>
+          <p className="text-xs text-slate-400 mt-1 italic">
+            <span className="not-italic font-semibold text-slate-500 mr-1">Review:</span>{finding.review_comment}
+          </p>
         )}
       </div>
       <span className="text-xs text-slate-300 flex-shrink-0 mt-0.5">{finding.checkpoint_id}</span>

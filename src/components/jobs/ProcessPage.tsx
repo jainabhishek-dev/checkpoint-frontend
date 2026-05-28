@@ -25,6 +25,7 @@ type Phase =
 interface PageResult {
   page: number;
   findings: Finding[];
+  imageUrl?: string;
 }
 
 interface InsertState {
@@ -71,6 +72,13 @@ export default function ProcessPage() {
     } else if (type === "page_ready") {
       const d = data as { page: number };
       setCurrentPage(d.page);
+      const base = import.meta.env.VITE_API_URL ?? "";
+      const imageUrl = `${base}/job/${job_id}/page/${d.page}`;
+      setPages((prev) => {
+        const existing = prev.find((p) => p.page === d.page);
+        if (existing) return prev.map((p) => p.page === d.page ? { ...p, imageUrl } : p);
+        return [...prev, { page: d.page, findings: [], imageUrl }];
+      });
     } else if (type === "page_findings") {
       const d = data as SSEPageFindings;
       setPages((prev) => {
@@ -274,6 +282,7 @@ export default function ProcessPage() {
             key={p.page}
             page={p.page}
             findings={p.findings}
+            imageUrl={p.imageUrl}
             selectedFindings={selectedFindings}
             onToggle={toggleFinding}
             isDone={phase === "done" || currentPage > p.page}
@@ -329,15 +338,16 @@ function Stat({ label, value, color }: { label: string; value: number; color: "s
 }
 
 function PageCard({
-  page, findings, selectedFindings, onToggle, isDone,
+  page, findings, imageUrl, selectedFindings, onToggle, isDone,
 }: {
   page: number;
   findings: Finding[];
+  imageUrl?: string;
   selectedFindings: Set<number>;
   onToggle: (id: number) => void;
   isDone: boolean;
 }) {
-  const [open, setOpen] = useState(findings.length > 0);
+  const [open, setOpen] = useState(true); // open as soon as page card appears
   const validCount = findings.filter((f) => f.review_status === "valid").length;
   const invalidCount = findings.filter((f) => f.review_status === "invalid").length;
 
@@ -345,7 +355,7 @@ function PageCard({
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
       <div
         className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors"
-        onClick={() => findings.length > 0 && setOpen((o) => !o)}
+        onClick={() => (imageUrl || findings.length > 0) && setOpen((o) => !o)}
       >
         <span className="text-sm font-semibold text-slate-700">Page {page}</span>
         {!isDone && findings.length === 0 && <Loader2 size={13} className="text-slate-400 animate-spin ml-1" />}
@@ -371,22 +381,40 @@ function PageCard({
         {isDone && findings.length === 0 && (
           <span className="text-xs text-slate-400 flex items-center gap-1"><CheckCircle2 size={13} className="text-green-500" /> No issues</span>
         )}
-        {findings.length > 0 && (
+        {(imageUrl || findings.length > 0) && (
           <span className="ml-auto text-slate-300">{open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</span>
         )}
       </div>
 
-      {open && findings.length > 0 && (
-        <div className="divide-y divide-slate-100">
-          {findings.map((f) => (
-            <FindingRow
-              key={f.id}
-              finding={f}
-              selected={selectedFindings.has(f.id)}
-              onToggle={onToggle}
-              showCheckbox={isDone && f.review_status === "valid"}
-            />
-          ))}
+      {open && (imageUrl || findings.length > 0) && (
+        <div className="flex gap-0">
+          {imageUrl && (
+            <div className="w-72 flex-shrink-0 border-r border-slate-100">
+              <img
+                src={imageUrl}
+                alt={`Page ${page}`}
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          )}
+          <div className="flex-1 divide-y divide-slate-100 max-h-96 overflow-y-auto">
+            {findings.length === 0 ? (
+              <div className="p-5 text-sm text-slate-400 text-center flex items-center justify-center gap-2">
+                <Loader2 size={14} className="animate-spin" /> Checking page…
+              </div>
+            ) : (
+              findings.map((f) => (
+                <FindingRow
+                  key={f.id}
+                  finding={f}
+                  selected={selectedFindings.has(f.id)}
+                  onToggle={onToggle}
+                  showCheckbox={isDone && f.review_status === "valid"}
+                />
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -82,7 +82,7 @@ export default function DashboardPage() {
           workflow_id: selectedWorkflow.id,
           checkpoint_ids: Array.from(checkedIds),
         });
-        navigate(`/process/${result.job_id}`, { state: result });
+        navigate(`/process/${result.job_id}`, { state: { ...result, workflow_id: selectedWorkflow.id } });
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Something went wrong. Please try again.";

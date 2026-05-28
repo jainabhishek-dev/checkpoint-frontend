@@ -1,11 +1,13 @@
 import { useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2, XCircle, AlertCircle, RotateCcw, MessageSquarePlus,
   Loader2, ChevronDown, ChevronUp, FileText, History,
 } from "lucide-react";
 import { useSSEJob } from "../../hooks/useSSEJob";
 import { getStreamUrl, retryJob, insertComments } from "../../api/jobs";
+import { getCheckpoints } from "../../api/workflows";
 import type { Finding, SSEPageFindings, SSEPageReview, SSEDocumentFindings, SSEDocumentReview, SSEAllDone, SSEPartialComplete } from "../../types";
 
 const SSE_EVENTS = [
@@ -39,6 +41,17 @@ export default function ProcessPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const retryFrom: number | undefined = (location.state as { retry_from?: number })?.retry_from;
+  const workflowId: string = (location.state as { workflow_id?: string })?.workflow_id ?? "";
+
+  const { data: cpData } = useQuery({
+    queryKey: ["checkpoints", workflowId],
+    queryFn: () => getCheckpoints(workflowId),
+    enabled: !!workflowId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const checkpointMap: Record<string, string> = Object.fromEntries(
+    (cpData?.checkpoints ?? []).map((cp) => [cp.id, cp.category])
+  );
 
   const [phase, setPhase] = useState<Phase>("connecting");
   const [title, setTitle] = useState((location.state as { title?: string })?.title ?? "");
@@ -286,6 +299,7 @@ export default function ProcessPage() {
             selectedFindings={selectedFindings}
             onToggle={toggleFinding}
             isDone={phase === "done" || currentPage > p.page}
+            checkpointMap={checkpointMap}
           />
         ))}
 
@@ -305,6 +319,7 @@ export default function ProcessPage() {
                   selected={selectedFindings.has(f.id)}
                   onToggle={toggleFinding}
                   showCheckbox={phase === "done"}
+                  checkpointMap={checkpointMap}
                 />
               ))}
             </div>
@@ -338,7 +353,7 @@ function Stat({ label, value, color }: { label: string; value: number; color: "s
 }
 
 function PageCard({
-  page, findings, imageUrl, selectedFindings, onToggle, isDone,
+  page, findings, imageUrl, selectedFindings, onToggle, isDone, checkpointMap,
 }: {
   page: number;
   findings: Finding[];
@@ -346,6 +361,7 @@ function PageCard({
   selectedFindings: Set<number>;
   onToggle: (id: number) => void;
   isDone: boolean;
+  checkpointMap: Record<string, string>;
 }) {
   const [open, setOpen] = useState(true); // open as soon as page card appears
   const validCount = findings.filter((f) => f.review_status === "valid").length;
@@ -411,6 +427,7 @@ function PageCard({
                   selected={selectedFindings.has(f.id)}
                   onToggle={onToggle}
                   showCheckbox={isDone && f.review_status === "valid"}
+                  checkpointMap={checkpointMap}
                 />
               ))
             )}
@@ -422,12 +439,13 @@ function PageCard({
 }
 
 function FindingRow({
-  finding, selected, onToggle, showCheckbox,
+  finding, selected, onToggle, showCheckbox, checkpointMap,
 }: {
   finding: Finding;
   selected: boolean;
   onToggle: (id: number) => void;
   showCheckbox: boolean;
+  checkpointMap: Record<string, string>;
 }) {
   const statusIcon = {
     valid: <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />,
@@ -450,6 +468,14 @@ function FindingRow({
         <Loader2 size={14} className="text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
       )}
       <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="text-xs text-slate-400">
+            {finding.checkpoint_id}
+            {checkpointMap[finding.checkpoint_id] && (
+              <> · <span className="font-medium text-slate-500">{checkpointMap[finding.checkpoint_id]}</span></>
+            )}
+          </span>
+        </div>
         <p className="text-xs font-mono text-slate-500 truncate mb-0.5">
           <span className="not-italic font-semibold text-slate-500 mr-1">Quote:</span>"{finding.quote}"
         </p>
@@ -465,7 +491,6 @@ function FindingRow({
           </p>
         )}
       </div>
-      <span className="text-xs text-slate-300 flex-shrink-0 mt-0.5">{finding.checkpoint_id}</span>
     </div>
   );
 }

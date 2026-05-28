@@ -352,13 +352,13 @@ function PageCard({
         {findings.length > 0 && (
           <div className="flex items-center gap-2 ml-1">
             {validCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
-                {validCount} issue{validCount !== 1 ? "s" : ""}
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                {validCount} Valid
               </span>
             )}
             {invalidCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
-                {invalidCount} dismissed
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                {invalidCount} Invalid
               </span>
             )}
             {findings.some((f) => !f.review_status) && (
@@ -402,8 +402,8 @@ function FindingRow({
   showCheckbox: boolean;
 }) {
   const statusIcon = {
-    valid: <XCircle size={14} className="text-red-500 flex-shrink-0" />,
-    invalid: <CheckCircle2 size={14} className="text-slate-400 flex-shrink-0" />,
+    valid: <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />,
+    invalid: <XCircle size={14} className="text-red-500 flex-shrink-0" />,
   };
 
   return (

@@ -90,7 +90,7 @@ function ReviewTable({ runs }: { runs: Run[] }) {
     return <EmptyState message="No review runs yet. Run a check from the dashboard." />;
   }
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
@@ -108,11 +108,13 @@ function ReviewTable({ runs }: { runs: Run[] }) {
         <tbody className="divide-y divide-slate-100">
           {runs.map((run) => (
             <tr key={run.id} className="hover:bg-slate-50 transition-colors">
-              <td className="px-4 py-3">
-                <p className="font-medium text-slate-900 truncate max-w-xs">{run.document_name ?? "—"}</p>
+              <td className="px-4 py-3 max-w-xs" title={run.document_name ?? ""}>
+                <p className="font-medium text-slate-900 truncate">{run.document_name ?? "—"}</p>
               </td>
-              <td className="px-4 py-3 text-slate-500">{run.workflow_name}</td>
-              <td className="px-4 py-3 text-slate-500 truncate max-w-[140px]">{run.checked_by}</td>
+              <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{run.workflow_name}</td>
+              <td className="px-4 py-3 text-slate-500 max-w-[160px]" title={run.checked_by}>
+                <p className="truncate">{run.checked_by}</p>
+              </td>
               <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{run.created_at?.slice(0, 16)}</td>
               <Td center>{run.total_pages}</Td>
               <Td center>{run.total_findings}</Td>
@@ -136,7 +138,7 @@ function CicTable({ runs }: { runs: CicRun[] }) {
     return <EmptyState message="No CIC runs yet. Start one from the dashboard." />;
   }
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-slate-50 border-b border-slate-200">
           <tr>
@@ -155,10 +157,16 @@ function CicTable({ runs }: { runs: CicRun[] }) {
         <tbody className="divide-y divide-slate-100">
           {runs.map((run) => (
             <tr key={run.id} className="hover:bg-slate-50 transition-colors">
-              <td className="px-4 py-3 truncate max-w-[160px] font-medium text-slate-900">{run.commented_file_name ?? "—"}</td>
-              <td className="px-4 py-3 truncate max-w-[160px] text-slate-500">{run.revised_file_name ?? "—"}</td>
-              <td className="px-4 py-3 text-slate-500">{run.workflow_name}</td>
-              <td className="px-4 py-3 text-slate-500 truncate max-w-[140px]">{run.checked_by}</td>
+              <td className="px-4 py-3 max-w-[180px] font-medium text-slate-900" title={run.commented_file_name ?? ""}>
+                <p className="truncate">{run.commented_file_name ?? "—"}</p>
+              </td>
+              <td className="px-4 py-3 max-w-[180px] text-slate-500" title={run.revised_file_name ?? ""}>
+                <p className="truncate">{run.revised_file_name ?? "—"}</p>
+              </td>
+              <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{run.workflow_name}</td>
+              <td className="px-4 py-3 text-slate-500 max-w-[160px]" title={run.checked_by}>
+                <p className="truncate">{run.checked_by}</p>
+              </td>
               <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{run.created_at?.slice(0, 16)}</td>
               <Td center>{run.total_comments}</Td>
               <Td center><span className="text-green-600 font-medium">{run.fixed_count}</span></Td>
@@ -179,14 +187,14 @@ function CicTable({ runs }: { runs: CicRun[] }) {
 
 function Th({ children, center }: { children?: React.ReactNode; center?: boolean }) {
   return (
-    <th className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 ${center ? "text-center" : "text-left"}`}>
+    <th className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 whitespace-nowrap ${center ? "text-center" : "text-left"}`}>
       {children}
     </th>
   );
 }
 
 function Td({ children, center }: { children?: React.ReactNode; center?: boolean }) {
-  return <td className={`px-4 py-3 ${center ? "text-center" : ""}`}>{children}</td>;
+  return <td className={`px-4 py-3 whitespace-nowrap ${center ? "text-center" : ""}`}>{children}</td>;
 }
 
 function EmptyState({ message }: { message: string }) {

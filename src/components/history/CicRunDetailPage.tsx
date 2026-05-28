@@ -187,14 +187,14 @@ function PageSection({
       </div>
 
       {open && (
-        <div className="flex gap-0">
+        <div className="flex gap-px bg-slate-200">
           {/* File 1 image */}
           <PageImage imageId={f1ImageId} page={page} label="Original" />
           {/* File 2 image */}
           <PageImage imageId={f2ImageId} page={page} label="Revised" />
 
           {/* Comments */}
-          <div className="flex-1 divide-y divide-slate-100 min-w-0">
+          <div className="flex-1 divide-y divide-slate-100 min-w-0 max-h-96 overflow-y-auto">
             {comments.length === 0 ? (
               <div className="p-5 text-sm text-slate-400 text-center">No comments on this page.</div>
             ) : (
@@ -209,19 +209,19 @@ function PageSection({
 
 function PageImage({ imageId, page, label }: { imageId?: string; page: number; label: string }) {
   return (
-    <div className="w-56 flex-shrink-0 border-r border-slate-100">
+    <div className="w-72 flex-shrink-0 bg-white">
       <div className="px-2 py-1 bg-slate-50 border-b border-slate-100">
         <span className="text-xs text-slate-400 font-medium">{label}</span>
       </div>
       {imageId ? (
         <img
-          src={`https://drive.google.com/thumbnail?id=${imageId}&sz=w300`}
+          src={`https://drive.google.com/thumbnail?id=${imageId}&sz=w500`}
           alt={`${label} page ${page}`}
           className="w-full h-auto"
           loading="lazy"
         />
       ) : (
-        <div className="h-32 flex flex-col items-center justify-center gap-1 text-slate-300">
+        <div className="h-40 flex flex-col items-center justify-center gap-1 text-slate-300">
           <ImageOff size={20} />
           <span className="text-xs">Not yet uploaded</span>
         </div>

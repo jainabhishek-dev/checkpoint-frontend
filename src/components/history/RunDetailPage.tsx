@@ -132,7 +132,7 @@ function PageSection({
             </div>
           )}
           {/* Findings */}
-          <div className="flex-1 divide-y divide-slate-100">
+          <div className="flex-1 divide-y divide-slate-100 max-h-96 overflow-y-auto">
             {findings.map((f) => (
               <FindingRow key={f.id} finding={f} checkpointMap={checkpointMap} runId={runId} />
             ))}

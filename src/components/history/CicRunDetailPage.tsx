@@ -215,7 +215,7 @@ function PageImage({ imageId, page, label }: { imageId?: string; page: number; l
       </div>
       {imageId ? (
         <img
-          src={`https://drive.google.com/thumbnail?id=${imageId}&sz=w1600`}
+          src={`${import.meta.env.VITE_API_URL ?? ""}/api/drive-image/${imageId}`}
           alt={`${label} page ${page}`}
           className="w-full h-auto"
           loading="lazy"

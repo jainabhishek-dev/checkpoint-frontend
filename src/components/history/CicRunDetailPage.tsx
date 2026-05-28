@@ -194,7 +194,7 @@ function PageSection({
           <PageImage imageId={f2ImageId} page={page} label="Revised" />
 
           {/* Comments */}
-          <div className="flex-1 divide-y divide-slate-100 min-w-0 max-h-96 overflow-y-auto">
+          <div className="flex-1 divide-y divide-slate-100 min-w-0 max-h-96 overflow-y-auto bg-white">
             {comments.length === 0 ? (
               <div className="p-5 text-sm text-slate-400 text-center">No comments on this page.</div>
             ) : (

@@ -73,7 +73,7 @@ export default function CicProcessPage() {
     }
   }, []);
 
-  useSSEJob(streamUrl, SSE_EVENTS, handleEvent);
+  useSSEJob(streamUrl, SSE_EVENTS, handleEvent, ["cic_done", "error"]);
 
   const progress = totalPages > 0 ? Math.round((currentPage / totalPages) * 100) : 0;
 

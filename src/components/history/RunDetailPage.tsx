@@ -167,8 +167,8 @@ function FindingRow({
   });
 
   const statusConfig = {
-    valid: { icon: <XCircle size={14} className="text-red-500" />, badge: "bg-red-100 text-red-700", label: "Issue" },
-    invalid: { icon: <CheckCircle2 size={14} className="text-slate-400" />, badge: "bg-slate-100 text-slate-500", label: "Dismissed" },
+    valid: { icon: <CheckCircle2 size={14} className="text-green-500" />, badge: "bg-green-100 text-green-700", label: "Valid" },
+    invalid: { icon: <XCircle size={14} className="text-red-500" />, badge: "bg-red-100 text-red-700", label: "Invalid" },
     undefined: { icon: <HelpCircle size={14} className="text-amber-400" />, badge: "bg-amber-100 text-amber-700", label: "Pending" },
   }[finding.review_status ?? "undefined"];
 
@@ -213,21 +213,21 @@ function FindingRow({
                   onClick={() => setEditStatus("valid")}
                   className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     editStatus === "valid"
-                      ? "bg-red-600 border-red-600 text-white"
+                      ? "bg-green-600 border-green-600 text-white"
                       : "border-slate-300 text-slate-600 hover:border-slate-400"
                   }`}
                 >
-                  Valid issue
+                  Valid
                 </button>
                 <button
                   onClick={() => setEditStatus("invalid")}
                   className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
                     editStatus === "invalid"
-                      ? "bg-slate-600 border-slate-600 text-white"
+                      ? "bg-red-600 border-red-600 text-white"
                       : "border-slate-300 text-slate-600 hover:border-slate-400"
                   }`}
                 >
-                  Dismiss
+                  Invalid
                 </button>
               </div>
               <input

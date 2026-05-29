@@ -77,7 +77,7 @@ export default function RunDetailPage() {
           </div>
           <div className="divide-y divide-slate-100">
             {doc_findings.map((f) => (
-              <FindingRow key={f.id} finding={f} checkpointMap={checkpoint_map} runId={run_id!} />
+              <FindingRow key={f.id} finding={f} checkpointMap={checkpoint_map} runId={run_id!} showLocation={true} />
             ))}
           </div>
         </div>
@@ -147,11 +147,12 @@ function PageSection({
 }
 
 function FindingRow({
-  finding, checkpointMap, runId,
+  finding, checkpointMap, runId, showLocation,
 }: {
   finding: Finding;
   checkpointMap: Record<string, string>;
   runId: string;
+  showLocation?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState<"valid" | "invalid">("valid");
@@ -184,7 +185,7 @@ function FindingRow({
               {statusConfig.label}
             </span>
             <span className="text-xs text-slate-400">{finding.checkpoint_id} · {categoryName}</span>
-            {finding.location && finding.location !== "" && (
+            {showLocation && finding.location && finding.location !== "" && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
                 {finding.location}
               </span>

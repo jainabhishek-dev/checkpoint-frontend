@@ -330,6 +330,7 @@ export default function ProcessPage() {
                   selected={selectedFindings.has(f.id)}
                   onToggle={toggleFinding}
                   showCheckbox={phase === "done" || phase === "partial"}
+                  showLocation={true}
                   checkpointMap={checkpointMap}
                 />
               ))}
@@ -450,12 +451,13 @@ function PageCard({
 }
 
 function FindingRow({
-  finding, selected, onToggle, showCheckbox, checkpointMap,
+  finding, selected, onToggle, showCheckbox, showLocation, checkpointMap,
 }: {
   finding: Finding;
   selected: boolean;
   onToggle: (id: number) => void;
   showCheckbox: boolean;
+  showLocation?: boolean;
   checkpointMap: Record<string, string>;
 }) {
   const statusIcon = {
@@ -486,7 +488,7 @@ function FindingRow({
               <> · <span className="font-medium text-slate-500">{checkpointMap[finding.checkpoint_id]}</span></>
             )}
           </span>
-          {finding.location && finding.location !== "" && (
+          {showLocation && finding.location && finding.location !== "" && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
               {finding.location}
             </span>

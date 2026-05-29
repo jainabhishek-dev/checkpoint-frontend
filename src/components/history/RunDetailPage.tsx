@@ -184,6 +184,11 @@ function FindingRow({
               {statusConfig.label}
             </span>
             <span className="text-xs text-slate-400">{finding.checkpoint_id} · {categoryName}</span>
+            {finding.location && finding.location !== "" && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+                {finding.location}
+              </span>
+            )}
           </div>
           <p className="text-xs font-mono text-slate-400 truncate mb-1">
             <span className="not-italic font-semibold text-slate-500 mr-1">Quote:</span>"{finding.quote}"

@@ -45,7 +45,7 @@ export default function Sidebar() {
         <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 flex-shrink-0">
           <circle cx="100" cy="100" r="70" fill="none" stroke="#F97316" strokeWidth="8"/>
           <g transform="translate(100, 100)">
-            <path d="M -12 0 L -3 8 L 12 -8" fill="none" stroke="#10B981" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M -20 0 L -5 14 L 20 -14" fill="none" stroke="#10B981" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
           </g>
         </svg>
         <span className="text-white font-semibold text-base tracking-tight">CheckPoint</span>

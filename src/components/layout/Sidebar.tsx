@@ -6,7 +6,6 @@ import {
   GitBranch,
   Users,
   LogOut,
-  BookOpen,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getLogoutUrl } from "../../api/auth";
@@ -19,14 +18,14 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
+  { to: "/", label: "Run a check", icon: <LayoutDashboard size={18} /> },
   { to: "/history", label: "History", icon: <History size={18} /> },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { to: "/admin/workflows", label: "Workflows", icon: <GitBranch size={18} />, adminOnly: true },
-  { to: "/admin/checkpoints", label: "Checkpoints", icon: <CheckSquare size={18} />, adminOnly: true },
-  { to: "/admin/admins", label: "Admins", icon: <Users size={18} />, adminOnly: true },
+  { to: "/admin/workflows", label: "Edit/Add Workflows", icon: <GitBranch size={18} />, adminOnly: true },
+  { to: "/admin/checkpoints", label: "Edit/Add Checkpoints", icon: <CheckSquare size={18} />, adminOnly: true },
+  { to: "/admin/admins", label: "Edit/Add Admins", icon: <Users size={18} />, adminOnly: true },
 ];
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -43,7 +42,12 @@ export default function Sidebar() {
     <aside className="flex flex-col w-60 min-h-screen bg-slate-900 border-r border-slate-800 px-4 py-6 fixed left-0 top-0 bottom-0 z-30">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-1 mb-8">
-        <BookOpen size={22} className="text-indigo-400" />
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 flex-shrink-0">
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#F97316" strokeWidth="8"/>
+          <g transform="translate(100, 100)">
+            <path d="M -12 0 L -3 8 L 12 -8" fill="none" stroke="#10B981" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+          </g>
+        </svg>
         <span className="text-white font-semibold text-base tracking-tight">CheckPoint</span>
       </div>
 

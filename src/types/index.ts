@@ -87,6 +87,7 @@ export interface CicComment {
   verdict: "fixed" | "not_fixed" | "not_sure";
   reason: string;
   page_resolved: number | null;
+  original_page: number | null;
 }
 
 export interface Admin {

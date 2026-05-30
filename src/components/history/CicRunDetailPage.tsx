@@ -263,9 +263,6 @@ function CommentRow({ comment }: { comment: CicComment }) {
             {comment.author && (
               <span className="text-xs text-slate-400">{comment.author}</span>
             )}
-            {comment.page_resolved && (
-              <span className="text-xs text-slate-300">resolved on p.{comment.page_resolved}</span>
-            )}
           </div>
           <p className="text-sm text-slate-700 leading-snug">{comment.content}</p>
           {comment.reason && (

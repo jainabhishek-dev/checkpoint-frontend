@@ -74,8 +74,25 @@ export default function CicProcessPage() {
     } else if (type === "cic_global_start") {
       setPhase("global_check");
     } else if (type === "cic_global") {
-      const d = data as { verdicts: CommentVerdict[] };
-      setGlobalVerdicts(d.verdicts);
+      const d = data as { verdicts: Array<CommentVerdict & { original_page?: number | null }> };
+      const pageVerdicts = d.verdicts.filter((v) => v.original_page != null);
+      const unanchored = d.verdicts.filter((v) => v.original_page == null);
+      if (pageVerdicts.length > 0) {
+        setPages((prev) =>
+          prev.map((p) => {
+            const updates = pageVerdicts.filter((v) => v.original_page === p.page_num);
+            if (!updates.length) return p;
+            return {
+              ...p,
+              verdicts: p.verdicts.map((existing) => {
+                const u = updates.find((x) => x.comment_id === existing.comment_id);
+                return u ? { ...existing, verdict: u.verdict, reason: u.reason } : existing;
+              }),
+            };
+          })
+        );
+      }
+      setGlobalVerdicts(unanchored);
     } else if (type === "cic_done") {
       const d = data as CicSSEDone;
       setDoneSummary(d);

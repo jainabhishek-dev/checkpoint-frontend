@@ -41,8 +41,22 @@ export default function CicRunDetailPage() {
             <p className="text-xs text-slate-400 mt-0.5">{run.created_at?.slice(0, 16)}</p>
           </div>
           <div className="text-right text-xs text-slate-400 space-y-0.5">
-            <p><span className="text-slate-500 font-medium">Original:</span> {run.commented_file_name ?? "—"}</p>
-            <p><span className="text-slate-500 font-medium">Revised:</span> {run.revised_file_name ?? "—"}</p>
+            <p>
+              <span className="text-slate-500 font-medium">Original:</span>{" "}
+              {run.commented_drive_url ? (
+                <a href={run.commented_drive_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 hover:underline">
+                  {run.commented_file_name ?? "—"}
+                </a>
+              ) : (run.commented_file_name ?? "—")}
+            </p>
+            <p>
+              <span className="text-slate-500 font-medium">Revised:</span>{" "}
+              {run.revised_drive_url ? (
+                <a href={run.revised_drive_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 hover:underline">
+                  {run.revised_file_name ?? "—"}
+                </a>
+              ) : (run.revised_file_name ?? "—")}
+            </p>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-4 mt-5 pt-5 border-t border-slate-100">

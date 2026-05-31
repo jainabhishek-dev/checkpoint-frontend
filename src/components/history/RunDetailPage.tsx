@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, CheckCircle2, XCircle, HelpCircle, FileText,
-  ExternalLink, Loader2, ChevronDown, ChevronUp,
+  ExternalLink, Loader2, ChevronDown, ChevronUp, Code2,
 } from "lucide-react";
 import { getRun, updateFindingReview } from "../../api/history";
 import type { Finding } from "../../types";
@@ -66,6 +66,11 @@ export default function RunDetailPage() {
           />
         );
       })}
+
+      {/* Prompts used */}
+      {run.page_prompt && (
+        <PromptsSection pagePrompt={run.page_prompt} docPrompt={run.doc_prompt} />
+      )}
 
       {/* Document-level findings */}
       {doc_findings.length > 0 && (
@@ -278,6 +283,53 @@ function Stat({ label, value, color }: { label: string; value: number; color?: "
     <div>
       <p className={`text-2xl font-bold ${c}`}>{value}</p>
       <p className="text-xs text-slate-400 mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+function PromptsSection({ pagePrompt, docPrompt }: { pagePrompt: string; docPrompt: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"page" | "doc">("page");
+
+  return (
+    <div className="mt-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div
+        className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Code2 size={15} className="text-slate-400" />
+        <span className="text-sm font-semibold text-slate-700">Prompts used</span>
+        <span className="ml-auto text-slate-300">{open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
+      </div>
+
+      {open && (
+        <div className="p-5">
+          {/* Tabs */}
+          <div className="flex gap-1 border-b border-slate-200 mb-4">
+            <button
+              onClick={() => setTab("page")}
+              className={`px-4 py-1.5 text-xs font-medium border-b-2 transition-colors -mb-px ${
+                tab === "page" ? "border-indigo-500 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              Page check
+            </button>
+            {docPrompt && (
+              <button
+                onClick={() => setTab("doc")}
+                className={`px-4 py-1.5 text-xs font-medium border-b-2 transition-colors -mb-px ${
+                  tab === "doc" ? "border-indigo-500 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                Document check
+              </button>
+            )}
+          </div>
+          <pre className="text-xs font-mono text-slate-600 whitespace-pre-wrap bg-slate-50 border border-slate-100 rounded-lg p-4 max-h-80 overflow-y-auto">
+            {tab === "page" ? pagePrompt : docPrompt}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

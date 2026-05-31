@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Link2, Loader2, ChevronDown, ChevronUp, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { getWorkflows, getCheckpoints } from "../../api/workflows";
-import { startReviewJob, startCicJob } from "../../api/jobs";
+import { startReviewJob, startCicJob, previewPrompt } from "../../api/jobs";
 import type { Workflow, Checkpoint } from "../../types";
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -18,6 +18,10 @@ export default function DashboardPage() {
   const [revisedUrl, setRevisedUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [pagePrompt, setPagePrompt] = useState("");
+  const [docPrompt, setDocPrompt] = useState("");
+  const [promptTab, setPromptTab] = useState<"page" | "doc">("page");
+  const [promptLoading, setPromptLoading] = useState(false);
 
   const { data: wfData, isLoading: wfLoading } = useQuery({
     queryKey: ["workflows"],
@@ -42,6 +46,23 @@ export default function DashboardPage() {
   function goBack() {
     setError("");
     setStep((s) => (s > 1 ? (s - 1) as Step : 1));
+  }
+
+  async function goToPromptStep() {
+    if (checkedIds.size === 0) { setError("Select at least one checkpoint."); return; }
+    setError("");
+    setPromptLoading(true);
+    try {
+      const result = await previewPrompt(selectedWorkflow!.id, Array.from(checkedIds));
+      setPagePrompt(result.page_prompt);
+      setDocPrompt(result.doc_prompt);
+      setPromptTab("page");
+      setStep(3);
+    } catch {
+      setError("Could not load prompt preview. Please try again.");
+    } finally {
+      setPromptLoading(false);
+    }
   }
 
   function toggleCheckpoint(id: string) {
@@ -81,6 +102,8 @@ export default function DashboardPage() {
           drive_url: driveUrl.trim(),
           workflow_id: selectedWorkflow.id,
           checkpoint_ids: Array.from(checkedIds),
+          custom_page_prompt: pagePrompt || undefined,
+          custom_doc_prompt: docPrompt || undefined,
         });
         navigate(`/process/${result.job_id}`, { state: { ...result, workflow_id: selectedWorkflow.id } });
       }
@@ -97,7 +120,7 @@ export default function DashboardPage() {
   // Step labels for breadcrumb
   const stepLabels = isCic
     ? ["Workflow", "Files"]
-    : ["Workflow", "Checkpoints", "Document"];
+    : ["Workflow", "Checkpoints", "Prompts", "Document"];
   const currentStepIndex = step - 1;
 
   return (
@@ -256,14 +279,12 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (checkedIds.size === 0) { setError("Select at least one checkpoint."); return; }
-                        setError("");
-                        setStep(3);
-                      }}
-                      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                      onClick={goToPromptStep}
+                      disabled={promptLoading}
+                      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium text-sm px-5 py-2.5 rounded-xl transition-colors shadow-sm"
                     >
-                      Next <ArrowRight size={14} />
+                      {promptLoading ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+                      {promptLoading ? "Loading…" : "Next"}
                     </button>
                     {error && <p className="text-sm text-red-600 flex items-center gap-1"><AlertCircle size={13} />{error}</p>}
                   </div>
@@ -272,8 +293,89 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ── Step 3: Drive URL (review only) ── */}
+          {/* ── Step 3: Prompt Editor (review only) ── */}
           {step === 3 && selectedWorkflow && !isCic && (
+            <div className="animate-in fade-in duration-150 space-y-5">
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 transition-colors">
+                  <ArrowLeft size={14} /> Back
+                </button>
+                <span className="text-sm text-slate-500">
+                  <span className="font-medium text-slate-700">{selectedWorkflow.name}</span>
+                  {" · "}{checkedIds.size} checkpoint{checkedIds.size !== 1 ? "s" : ""} selected
+                </span>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Prompt Editor</h2>
+                  <p className="text-xs text-slate-400">Edit the prompts that will be sent to the AI for this run</p>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-1 border-b border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setPromptTab("page")}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                      promptTab === "page"
+                        ? "border-indigo-500 text-indigo-600"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    Page check
+                  </button>
+                  {docPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => setPromptTab("doc")}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                        promptTab === "doc"
+                          ? "border-indigo-500 text-indigo-600"
+                          : "border-transparent text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      Document check
+                    </button>
+                  )}
+                </div>
+
+                {promptTab === "page" && (
+                  <textarea
+                    value={pagePrompt}
+                    onChange={(e) => setPagePrompt(e.target.value)}
+                    className="w-full h-80 text-xs font-mono border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                    spellCheck={false}
+                  />
+                )}
+                {promptTab === "doc" && docPrompt && (
+                  <textarea
+                    value={docPrompt}
+                    onChange={(e) => setDocPrompt(e.target.value)}
+                    className="w-full h-80 text-xs font-mono border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                    spellCheck={false}
+                  />
+                )}
+
+                <p className="text-xs text-slate-400">
+                  <span className="font-medium text-slate-500">{"{page_num}"}</span> in the page prompt will be replaced with the actual page number at runtime.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setError(""); setStep(4); }}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                >
+                  Next <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 4: Drive URL (review only) ── */}
+          {step === 4 && selectedWorkflow && !isCic && (
             <div className="animate-in fade-in duration-150 space-y-5">
               <div className="flex items-center gap-3">
                 <button
@@ -285,7 +387,7 @@ export default function DashboardPage() {
                 </button>
                 <span className="text-sm text-slate-500">
                   <span className="font-medium text-slate-700">{selectedWorkflow.name}</span>
-                  {" · "}{checkedIds.size} checkpoint{checkedIds.size !== 1 ? "s" : ""} selected
+                  {" · "}{checkedIds.size} checkpoint{checkedIds.size !== 1 ? "s" : ""} selected · prompts ready
                 </span>
               </div>
 

@@ -58,6 +58,8 @@ export interface Run {
   valid_findings: number;
   invalid_findings: number;
   created_at: string;
+  page_prompt: string | null;
+  doc_prompt: string | null;
 }
 
 export interface CicRun {

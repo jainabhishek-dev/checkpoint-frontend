@@ -4,8 +4,18 @@ export async function startReviewJob(payload: {
   drive_url: string;
   workflow_id: string;
   checkpoint_ids: string[];
+  custom_page_prompt?: string;
+  custom_doc_prompt?: string;
 }) {
   const { data } = await client.post<{ job_id: string; title: string }>("/api/check", payload);
+  return data;
+}
+
+export async function previewPrompt(workflow_id: string, checkpoint_ids: string[]) {
+  const { data } = await client.post<{ page_prompt: string; doc_prompt: string }>(
+    "/api/preview-prompt",
+    { workflow_id, checkpoint_ids }
+  );
   return data;
 }
 

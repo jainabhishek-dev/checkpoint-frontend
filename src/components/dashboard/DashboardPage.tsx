@@ -56,7 +56,7 @@ export default function DashboardPage() {
       const result = await previewPrompt(selectedWorkflow!.id, Array.from(checkedIds));
       setPagePrompt(result.page_prompt);
       setDocPrompt(result.doc_prompt);
-      setPromptTab("page");
+      setPromptTab(result.page_prompt ? "page" : "doc");
       setStep(3);
     } catch {
       setError("Could not load prompt preview. Please try again.");
@@ -314,6 +314,7 @@ export default function DashboardPage() {
 
                 {/* Tabs */}
                 <div className="flex gap-1 border-b border-slate-200">
+                  {pagePrompt && (
                   <button
                     type="button"
                     onClick={() => setPromptTab("page")}
@@ -325,6 +326,7 @@ export default function DashboardPage() {
                   >
                     Page check
                   </button>
+                  )}
                   {docPrompt && (
                     <button
                       type="button"

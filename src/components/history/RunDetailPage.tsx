@@ -129,7 +129,7 @@ function PageSection({
           {imageId && (
             <div className="w-72 flex-shrink-0 border-r border-slate-100">
               <img
-                src={`${import.meta.env.VITE_API_URL ?? ""}/api/drive-image/${imageId}`}
+                src={`https://drive.google.com/uc?export=view&id=${imageId}`}
                 alt={`Page ${page}`}
                 className="w-full h-auto"
                 loading="lazy"

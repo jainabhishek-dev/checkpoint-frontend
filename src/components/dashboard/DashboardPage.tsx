@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Link2, Loader2, ChevronDown, ChevronUp, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { getWorkflows, getCheckpoints } from "../../api/workflows";
-import { startReviewJob, startCicJob, previewPrompt } from "../../api/jobs";
+import { startReviewJob, startCicJob, previewPrompt, startAkJob, getAkDefaultPrompt } from "../../api/jobs";
 import type { Workflow, Checkpoint } from "../../types";
 
 type Step = 1 | 2 | 3 | 4;
@@ -22,6 +22,10 @@ export default function DashboardPage() {
   const [docPrompt, setDocPrompt] = useState("");
   const [promptTab, setPromptTab] = useState<"page" | "doc">("page");
   const [promptLoading, setPromptLoading] = useState(false);
+  // AK Review state
+  const [chapterUrl, setChapterUrl] = useState("");
+  const [akUrl, setAkUrl] = useState("");
+  const [akPrompt, setAkPrompt] = useState("");
 
   const { data: wfData, isLoading: wfLoading } = useQuery({
     queryKey: ["workflows"],
@@ -35,11 +39,22 @@ export default function DashboardPage() {
   });
 
   const isCic = selectedWorkflow?.type === "cic";
+  const isAk = selectedWorkflow?.type === "ak_review";
+
+  // Load default AK prompt when an ak_review workflow is selected at step 2
+  useEffect(() => {
+    if (isAk && step === 2 && !akPrompt) {
+      getAkDefaultPrompt().then(setAkPrompt).catch(() => {});
+    }
+  }, [isAk, step, akPrompt]);
 
   function selectWorkflow(wf: Workflow) {
     setSelectedWorkflow(wf);
     setCheckedIds(new Set());
     setError("");
+    setAkPrompt("");
+    setChapterUrl("");
+    setAkUrl("");
     setStep(2);
   }
 
@@ -96,6 +111,14 @@ export default function DashboardPage() {
           revised_url: revisedUrl.trim(),
         });
         navigate(`/cic-process/${result.job_id}`, { state: result });
+      } else if (isAk) {
+        const result = await startAkJob({
+          workflow_id: selectedWorkflow.id,
+          chapter_url: chapterUrl.trim(),
+          ak_url: akUrl.trim(),
+          custom_prompt: akPrompt || undefined,
+        });
+        navigate(`/ak-process/${result.job_id}`, { state: result });
       } else {
         if (checkedIds.size === 0) { setError("Please select at least one checkpoint."); setSubmitting(false); return; }
         const result = await startReviewJob({
@@ -116,10 +139,13 @@ export default function DashboardPage() {
 
   const reviewWorkflows = wfData?.review_workflows ?? [];
   const cicWorkflows = wfData?.cic_workflows ?? [];
+  const akWorkflows = wfData?.ak_workflows ?? [];
 
   // Step labels for breadcrumb
   const stepLabels = isCic
     ? ["Workflow", "Files"]
+    : isAk
+    ? ["Workflow", "Prompt", "Documents"]
     : ["Workflow", "Checkpoints", "Prompts", "Document"];
   const currentStepIndex = step - 1;
 
@@ -182,13 +208,24 @@ export default function DashboardPage() {
                 </>
               )}
 
-              {reviewWorkflows.length === 0 && cicWorkflows.length === 0 && (
+              {akWorkflows.length > 0 && (
+                <>
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 mt-4">Answer Key Review</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {akWorkflows.map((wf) => (
+                      <WorkflowCard key={wf.id} wf={wf as Workflow} selected={false} onClick={() => selectWorkflow(wf as Workflow)} />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {reviewWorkflows.length === 0 && cicWorkflows.length === 0 && akWorkflows.length === 0 && (
                 <p className="text-sm text-slate-400">No workflows available. Ask an admin to create one.</p>
               )}
             </div>
           )}
 
-          {/* ── Step 2: Checkpoints (review) or URLs (CIC) ── */}
+          {/* ── Step 2: Checkpoints (review) or Prompt (AK) or URLs (CIC) ── */}
           {step === 2 && selectedWorkflow && (
             <div className="animate-in fade-in duration-150 space-y-5">
               {/* Selected workflow chip */}
@@ -202,9 +239,11 @@ export default function DashboardPage() {
                 </button>
                 <span className="text-sm font-medium text-slate-700">{selectedWorkflow.name}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  isCic ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+                  isCic ? "bg-purple-100 text-purple-700" :
+                  isAk ? "bg-orange-100 text-orange-700" :
+                  "bg-blue-100 text-blue-700"
                 }`}>
-                  {isCic ? "CIC" : "Review"}
+                  {isCic ? "CIC" : isAk ? "AK Review" : "Review"}
                 </span>
               </div>
 
@@ -225,8 +264,40 @@ export default function DashboardPage() {
                     placeholder="https://drive.google.com/file/d/..."
                   />
                   {error && <ErrorBanner message={error} />}
-                  <SubmitButton submitting={submitting} />
+                  <SubmitButton submitting={submitting} label="Run CIC Check" />
                 </div>
+              ) : isAk ? (
+                /* AK Review Step 2: Prompt editor */
+                <>
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Review Prompt</h2>
+                      <p className="text-xs text-slate-400">Edit the prompt that will be sent to the AI for this run</p>
+                    </div>
+                    {akPrompt ? (
+                      <textarea
+                        value={akPrompt}
+                        onChange={(e) => setAkPrompt(e.target.value)}
+                        className="w-full h-96 text-xs font-mono border border-slate-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                        spellCheck={false}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-400 py-8 justify-center">
+                        <Loader2 size={16} className="animate-spin" /> Loading default prompt…
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setError(""); setStep(3); }}
+                      disabled={!akPrompt}
+                      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium text-sm px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                    >
+                      Next <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </>
               ) : (
                 /* Review: checkpoint picker */
                 <>
@@ -293,8 +364,42 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* ── Step 3: Document URLs (AK Review) ── */}
+          {step === 3 && selectedWorkflow && isAk && (
+            <div className="animate-in fade-in duration-150 space-y-5">
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 transition-colors">
+                  <ArrowLeft size={14} /> Back
+                </button>
+                <span className="text-sm text-slate-500">
+                  <span className="font-medium text-slate-700">{selectedWorkflow.name}</span>
+                  {" · "} prompt ready
+                </span>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">File URLs</h2>
+                <UrlInput
+                  label="Chapter PDF (Google Drive URL)"
+                  value={chapterUrl}
+                  onChange={setChapterUrl}
+                  placeholder="https://drive.google.com/file/d/..."
+                />
+                <UrlInput
+                  label="Answer Key PDF (Google Drive URL)"
+                  value={akUrl}
+                  onChange={setAkUrl}
+                  placeholder="https://drive.google.com/file/d/..."
+                />
+              </div>
+
+              {error && <ErrorBanner message={error} />}
+              <SubmitButton submitting={submitting} label="Run Answer Key Check" />
+            </div>
+          )}
+
           {/* ── Step 3: Prompt Editor (review only) ── */}
-          {step === 3 && selectedWorkflow && !isCic && (
+          {step === 3 && selectedWorkflow && !isCic && !isAk && (
             <div className="animate-in fade-in duration-150 space-y-5">
               <div className="flex items-center gap-3">
                 <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-700 transition-colors">
@@ -377,7 +482,7 @@ export default function DashboardPage() {
           )}
 
           {/* ── Step 4: Drive URL (review only) ── */}
-          {step === 4 && selectedWorkflow && !isCic && (
+          {step === 4 && selectedWorkflow && !isCic && !isAk && (
             <div className="animate-in fade-in duration-150 space-y-5">
               <div className="flex items-center gap-3">
                 <button
@@ -458,7 +563,7 @@ function UrlInput({
   );
 }
 
-function SubmitButton({ submitting }: { submitting: boolean }) {
+function SubmitButton({ submitting, label = "Run Check" }: { submitting: boolean; label?: string }) {
   return (
     <button
       type="submit"
@@ -466,7 +571,7 @@ function SubmitButton({ submitting }: { submitting: boolean }) {
       className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm px-6 py-2.5 rounded-xl transition-colors shadow-sm"
     >
       {submitting ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
-      {submitting ? "Starting…" : "Run Check"}
+      {submitting ? "Starting…" : label}
     </button>
   );
 }

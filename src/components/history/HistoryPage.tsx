@@ -1,16 +1,16 @@
 // useState not needed — tab/workflow state is in URL search params
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Loader2, FileText, GitCompare } from "lucide-react";
+import { ExternalLink, Loader2, FileText, GitCompare, BookOpen } from "lucide-react";
 import { getHistory } from "../../api/history";
-import type { Run, CicRun } from "../../types";
+import type { Run, CicRun, AkRun } from "../../types";
 
 export default function HistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = (searchParams.get("tab") ?? "review") as "review" | "cic";
+  const tab = (searchParams.get("tab") ?? "review") as "review" | "cic" | "ak";
   const workflow = searchParams.get("workflow") ?? "";
 
-  function setTab(t: "review" | "cic") {
+  function setTab(t: "review" | "cic" | "ak") {
     const p = new URLSearchParams(searchParams);
     p.set("tab", t);
     p.delete("workflow");
@@ -29,7 +29,10 @@ export default function HistoryPage() {
     queryFn: () => getHistory(tab, workflow || undefined),
   });
 
-  const workflows = tab === "review" ? (data?.review_workflows ?? []) : (data?.cic_workflows ?? []);
+  const workflows =
+    tab === "review" ? (data?.review_workflows ?? []) :
+    tab === "cic" ? (data?.cic_workflows ?? []) :
+    (data?.ak_workflows ?? []);
 
   return (
     <div className="p-8">
@@ -41,6 +44,7 @@ export default function HistoryPage() {
       <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 w-fit mb-6">
         <TabButton active={tab === "review"} onClick={() => setTab("review")} icon={<FileText size={14} />} label="Review runs" />
         <TabButton active={tab === "cic"} onClick={() => setTab("cic")} icon={<GitCompare size={14} />} label="CIC runs" />
+        <TabButton active={tab === "ak"} onClick={() => setTab("ak")} icon={<BookOpen size={14} />} label="AK Reviews" />
       </div>
 
       {/* Workflow filter */}
@@ -65,8 +69,10 @@ export default function HistoryPage() {
         </div>
       ) : tab === "review" ? (
         <ReviewTable runs={data?.runs ?? []} />
-      ) : (
+      ) : tab === "cic" ? (
         <CicTable runs={data?.cic_runs ?? []} />
+      ) : (
+        <AkTable runs={data?.ak_runs ?? []} />
       )}
     </div>
   );
@@ -174,6 +180,58 @@ function CicTable({ runs }: { runs: CicRun[] }) {
               <Td center><span className="text-amber-600 font-medium">{run.not_sure_count}</span></Td>
               <td className="px-4 py-3">
                 <Link to={`/history/cic/${run.id}`} className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 whitespace-nowrap">
+                  View <ExternalLink size={12} />
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AkTable({ runs }: { runs: AkRun[] }) {
+  if (runs.length === 0) {
+    return <EmptyState message="No AK Reviews yet. Start one from the dashboard." />;
+  }
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <Th>Chapter</Th>
+            <Th>Answer Key</Th>
+            <Th>Workflow</Th>
+            <Th>Checked by</Th>
+            <Th>Date</Th>
+            <Th center>Total Qs</Th>
+            <Th center>Missing</Th>
+            <Th center>Incorrect</Th>
+            <Th center>Manual</Th>
+            <Th></Th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {runs.map((run) => (
+            <tr key={run.id} className="hover:bg-slate-50 transition-colors">
+              <td className="px-4 py-3 max-w-[180px] font-medium text-slate-900" title={run.chapter_file_name ?? ""}>
+                <p className="truncate">{run.chapter_file_name ?? "—"}</p>
+              </td>
+              <td className="px-4 py-3 max-w-[180px] text-slate-500" title={run.ak_file_name ?? ""}>
+                <p className="truncate">{run.ak_file_name ?? "—"}</p>
+              </td>
+              <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{run.workflow_name}</td>
+              <td className="px-4 py-3 text-slate-500 max-w-[160px]" title={run.checked_by}>
+                <p className="truncate">{run.checked_by}</p>
+              </td>
+              <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{run.created_at?.slice(0, 16)}</td>
+              <Td center>{run.total_questions}</Td>
+              <Td center><span className={run.missing_from_ak > 0 ? "text-red-600 font-medium" : ""}>{run.missing_from_ak}</span></Td>
+              <Td center><span className={run.incorrect_answers > 0 ? "text-red-600 font-medium" : ""}>{run.incorrect_answers}</span></Td>
+              <Td center><span className={run.manual_review_cases > 0 ? "text-amber-600 font-medium" : ""}>{run.manual_review_cases}</span></Td>
+              <td className="px-4 py-3">
+                <Link to={`/history/ak/${run.id}`} className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 whitespace-nowrap">
                   View <ExternalLink size={12} />
                 </Link>
               </td>

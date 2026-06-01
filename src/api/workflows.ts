@@ -6,6 +6,7 @@ export async function getWorkflows() {
     workflows: Workflow[];
     review_workflows: Workflow[];
     cic_workflows: Workflow[];
+    ak_workflows: Workflow[];
   }>("/api/workflows");
   return data;
 }

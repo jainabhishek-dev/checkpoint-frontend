@@ -58,3 +58,27 @@ export function getCicStreamUrl(job_id: string): string {
   const base = import.meta.env.VITE_API_URL ?? "";
   return `${base}/cic-stream/${job_id}`;
 }
+
+export async function getAkDefaultPrompt(): Promise<string> {
+  const { data } = await client.get<{ prompt: string }>("/api/ak-default-prompt");
+  return data.prompt;
+}
+
+export async function startAkJob(payload: {
+  workflow_id: string;
+  chapter_url: string;
+  ak_url: string;
+  custom_prompt?: string;
+}) {
+  const { data } = await client.post<{
+    job_id: string;
+    chapter_title: string;
+    ak_title: string;
+  }>("/api/ak-check", payload);
+  return data;
+}
+
+export function getAkStreamUrl(job_id: string): string {
+  const base = import.meta.env.VITE_API_URL ?? "";
+  return `${base}/api/ak-stream/${job_id}`;
+}

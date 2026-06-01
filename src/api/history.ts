@@ -1,13 +1,15 @@
 import client from "./client";
-import type { Run, CicRun, CicComment, Finding } from "../types";
+import type { Run, CicRun, CicComment, Finding, AkRun, AkQuestionResult } from "../types";
 
-export async function getHistory(tab: "review" | "cic" = "review", workflow?: string) {
+export async function getHistory(tab: "review" | "cic" | "ak" = "review", workflow?: string) {
   const { data } = await client.get<{
     runs: Run[];
     cic_runs: CicRun[];
+    ak_runs: AkRun[];
     active_tab: string;
     review_workflows: { id: string; name: string }[];
     cic_workflows: { id: string; name: string }[];
+    ak_workflows: { id: string; name: string }[];
   }>("/api/history", { params: { tab, workflow } });
   return data;
 }
@@ -41,6 +43,14 @@ export async function getCicRunPages(run_id: string) {
   const { data } = await client.get<{
     pages: Array<{ page_num: number; file_version: string; drive_file_id: string }>;
   }>(`/api/history/cic/${run_id}/pages`);
+  return data;
+}
+
+export async function getAkRun(run_id: string) {
+  const { data } = await client.get<{
+    run: AkRun;
+    questions: AkQuestionResult[];
+  }>(`/api/history/ak/${run_id}`);
   return data;
 }
 

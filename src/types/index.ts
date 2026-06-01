@@ -16,7 +16,7 @@ export interface Workflow {
   id: string;
   name: string;
   description: string;
-  type: "review" | "cic";
+  type: "review" | "cic" | "ak_review";
   sort_order: number;
   created_by: string;
 }
@@ -90,6 +90,35 @@ export interface CicComment {
   reason: string;
   page_resolved: number | null;
   original_page: number | null;
+}
+
+export interface AkRun {
+  id: string;
+  workflow_id: string;
+  workflow_name: string;
+  checked_by: string;
+  chapter_file_name: string | null;
+  chapter_drive_url: string | null;
+  ak_file_name: string | null;
+  ak_drive_url: string | null;
+  prompt: string | null;
+  total_questions: number;
+  present_in_ak: number;
+  missing_from_ak: number;
+  incorrect_answers: number;
+  manual_review_cases: number;
+  created_at: string;
+}
+
+export interface AkQuestionResult {
+  id: string;
+  run_id: string;
+  page_no: number | null;
+  exercise_no: string | null;
+  question_no: string | null;
+  present_in_ak: "Yes" | "No";
+  answer_correct: "Yes" | "No" | "Manual Review Required";
+  suggestions: string | null;
 }
 
 export interface Admin {

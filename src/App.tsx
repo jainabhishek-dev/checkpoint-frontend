@@ -8,6 +8,8 @@ import CicProcessPage from "./components/jobs/CicProcessPage";
 import HistoryPage from "./components/history/HistoryPage";
 import RunDetailPage from "./components/history/RunDetailPage";
 import CicRunDetailPage from "./components/history/CicRunDetailPage";
+import AkProcessPage from "./components/jobs/AkProcessPage";
+import AkRunDetailPage from "./components/history/AkRunDetailPage";
 import CheckpointsPage from "./components/admin/CheckpointsPage";
 import WorkflowsPage from "./components/admin/WorkflowsPage";
 import AdminsPage from "./components/admin/AdminsPage";
@@ -58,8 +60,10 @@ export default function App() {
           <Route path="/process/:job_id" element={<ProcessPage />} />
           <Route path="/cic-process/:job_id" element={<CicProcessPage />} />
           <Route path="/history" element={<HistoryPage />} />
-          <Route path="/history/:run_id" element={<RunDetailPage />} />
           <Route path="/history/cic/:run_id" element={<CicRunDetailPage />} />
+          <Route path="/history/ak/:run_id" element={<AkRunDetailPage />} />
+          <Route path="/history/:run_id" element={<RunDetailPage />} />
+          <Route path="/ak-process/:job_id" element={<AkProcessPage />} />
 
           {/* Admin-only */}
           <Route element={<RequireAdmin />}>

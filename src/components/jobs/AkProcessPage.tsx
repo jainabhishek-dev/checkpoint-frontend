@@ -68,7 +68,7 @@ export default function AkProcessPage() {
     });
 
     // Phase 3: all extraction done, review begins
-    es.addEventListener("ak_start", (e) => {
+    es.addEventListener("ak_start", (_e) => {
       setPhase("reviewing");
       setCurrentExercise(null);
       // Keep questionCount from extraction, reset status to pending for review tracking

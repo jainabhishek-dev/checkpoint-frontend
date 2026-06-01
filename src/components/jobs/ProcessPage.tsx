@@ -428,9 +428,13 @@ function PageCard({
           )}
           <div className="flex-1 divide-y divide-slate-100 max-h-96 overflow-y-auto">
             {findings.length === 0 ? (
-              <div className="p-5 text-sm text-slate-400 text-center flex items-center justify-center gap-2">
-                <Loader2 size={14} className="animate-spin" /> Checking page…
-              </div>
+              isDone ? (
+                <div className="p-5 text-sm text-slate-400 text-center">No issues found on this page.</div>
+              ) : (
+                <div className="p-5 text-sm text-slate-400 text-center flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" /> Checking page…
+                </div>
+              )
             ) : (
               findings.map((f) => (
                 <FindingRow

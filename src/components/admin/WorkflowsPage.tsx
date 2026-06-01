@@ -90,6 +90,8 @@ export default function WorkflowsPage() {
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         wf.type === "cic"
                           ? "bg-purple-100 text-purple-700"
+                          : wf.type === "ak_review"
+                          ? "bg-orange-100 text-orange-700"
                           : "bg-blue-100 text-blue-700"
                       }`}>
                         {wf.type === "cic" ? "CIC" : wf.type === "ak_review" ? "AK Review" : "Review"}

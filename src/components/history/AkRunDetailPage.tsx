@@ -35,13 +35,35 @@ export default function AkRunDetailPage() {
     return true;
   });
 
-  // Group by exercise
+  // Sort helpers (mirror backend logic)
+  function naturalSortKey(s: string): string {
+    return (s || '').replace(/\d+/g, (n) => n.padStart(4, '0')).toLowerCase();
+  }
+  function exerciseSortKey(name: string): [number, number, string] {
+    if (name.toLowerCase().includes('additional')) return [1, 0, name.toLowerCase()];
+    const m = name.match(/(\d+)\s*([a-zA-Z]*)/);
+    if (m) return [0, parseInt(m[1]), m[2].toLowerCase()];
+    return [0, 999, name.toLowerCase()];
+  }
+
+  // Group by exercise, then sort exercises and questions
   const exerciseOrder: string[] = [];
   const byExercise: Record<string, AkQuestionResult[]> = {};
   for (const q of filtered) {
     const ex = q.exercise_no ?? "Unknown";
     if (!byExercise[ex]) { exerciseOrder.push(ex); byExercise[ex] = []; }
     byExercise[ex].push(q);
+  }
+  // Sort exercise groups
+  exerciseOrder.sort((a, b) => {
+    const ka = exerciseSortKey(a), kb = exerciseSortKey(b);
+    return ka[0] - kb[0] || ka[1] - kb[1] || ka[2].localeCompare(kb[2]);
+  });
+  // Sort questions within each exercise
+  for (const ex of exerciseOrder) {
+    byExercise[ex].sort((a, b) =>
+      naturalSortKey(a.question_no ?? '').localeCompare(naturalSortKey(b.question_no ?? ''))
+    );
   }
 
   const filterCounts = {

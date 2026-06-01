@@ -92,7 +92,7 @@ export default function WorkflowsPage() {
                           ? "bg-purple-100 text-purple-700"
                           : "bg-blue-100 text-blue-700"
                       }`}>
-                        {wf.type === "cic" ? "CIC" : "Review"}
+                        {wf.type === "cic" ? "CIC" : wf.type === "ak_review" ? "AK Review" : "Review"}
                       </span>
                       {wf.type === "review" && (
                         <span className="text-xs text-slate-400">
@@ -177,7 +177,7 @@ function AddWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel: (
       <div className="space-y-4">
         {/* Type */}
         <div className="flex gap-3">
-          {["review", "cic"].map((t) => (
+          {["review", "cic", "ak_review"].map((t) => (
             <button
               key={t}
               type="button"
@@ -188,7 +188,7 @@ function AddWorkflowForm({ onDone, onCancel }: { onDone: () => void; onCancel: (
                   : "border-slate-200 text-slate-600 hover:border-slate-300"
               }`}
             >
-              {t === "cic" ? "CIC" : "Review"}
+              {t === "cic" ? "CIC" : t === "ak_review" ? "AK Review" : "Review"}
             </button>
           ))}
         </div>

@@ -6,7 +6,7 @@ import {
 import { getAkStreamUrl } from "../../api/jobs";
 import type { AkQuestionResult } from "../../types";
 
-type ExerciseStatus = "pending" | "reviewing" | "done";
+type ExerciseStatus = "pending" | "extracting" | "extracted" | "reviewing" | "done";
 
 interface ExerciseState {
   name: string;
@@ -14,13 +14,13 @@ interface ExerciseState {
   questionCount: number;
 }
 
-type Phase = "extracting" | "reviewing" | "done" | "error";
+type Phase = "scanning" | "extracting" | "reviewing" | "done" | "error";
 
 export default function AkProcessPage() {
   const { job_id } = useParams<{ job_id: string }>();
   const locState = useLocation().state as { chapter_title?: string; ak_title?: string } | null;
 
-  const [phase, setPhase] = useState<Phase>("extracting");
+  const [phase, setPhase] = useState<Phase>("scanning");
   const [exercises, setExercises] = useState<ExerciseState[]>([]);
   const [currentExercise, setCurrentExercise] = useState<string | null>(null);
   const [questions, setQuestions] = useState<AkQuestionResult[]>([]);
@@ -37,10 +37,42 @@ export default function AkProcessPage() {
     const es = new EventSource(url, { withCredentials: true });
     esRef.current = es;
 
+    // Phase 1: exercise names known — mark first as extracting immediately
+    es.addEventListener("ak_exercises_found", (e) => {
+      const d = JSON.parse(e.data) as { exercises: string[] };
+      setPhase("extracting");
+      setExercises(d.exercises.map((name, i) => ({
+        name,
+        status: i === 0 ? "extracting" : "pending",
+        questionCount: 0,
+      })));
+    });
+
+    // Phase 2: per-exercise question extraction complete
+    es.addEventListener("ak_exercise_extracted", (e) => {
+      const d = JSON.parse(e.data) as { exercise_no: string; question_count: number };
+      setCurrentExercise(d.exercise_no);  // track which is currently being extracted
+      setExercises((prev) => {
+        const updated = prev.map((ex) =>
+          ex.name === d.exercise_no
+            ? { ...ex, status: "extracted" as ExerciseStatus, questionCount: d.question_count }
+            : ex
+        );
+        // Mark the next pending exercise as "extracting"
+        const nextPending = updated.find(ex => ex.status === "pending");
+        if (nextPending) {
+          return updated.map(ex => ex.name === nextPending.name ? { ...ex, status: "extracting" as ExerciseStatus } : ex);
+        }
+        return updated;
+      });
+    });
+
+    // Phase 3: all extraction done, review begins
     es.addEventListener("ak_start", (e) => {
-      const d = JSON.parse(e.data) as { exercises: string[]; total_questions: number };
       setPhase("reviewing");
-      setExercises(d.exercises.map((name) => ({ name, status: "pending", questionCount: 0 })));
+      setCurrentExercise(null);
+      // Keep questionCount from extraction, reset status to pending for review tracking
+      setExercises((prev) => prev.map((ex) => ({ ...ex, status: "pending" })));
     });
 
     es.addEventListener("ak_exercise_start", (e) => {
@@ -115,6 +147,11 @@ export default function AkProcessPage() {
             <div className="flex items-center gap-2 mb-1">
               <BookOpen size={16} className="text-indigo-500" />
               <h1 className="text-lg font-bold text-slate-900 tracking-tight">Answer Key Review</h1>
+              {phase === "scanning" && (
+                <span className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-0.5">
+                  <Loader2 size={11} className="animate-spin" /> Scanning chapter…
+                </span>
+              )}
               {phase === "extracting" && (
                 <span className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
                   <Loader2 size={11} className="animate-spin" /> Extracting questions…
@@ -178,14 +215,15 @@ export default function AkProcessPage() {
                 {exercises.map((ex) => (
                   <div key={ex.name} className="px-4 py-2.5 flex items-center gap-2.5">
                     {ex.status === "done" && <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />}
-                    {ex.status === "reviewing" && <Loader2 size={13} className="animate-spin text-indigo-500 flex-shrink-0" />}
+                    {ex.status === "extracted" && <CheckCircle2 size={13} className="text-amber-400 flex-shrink-0" />}
+                    {(ex.status === "reviewing" || ex.status === "extracting") && <Loader2 size={13} className="animate-spin text-indigo-500 flex-shrink-0" />}
                     {ex.status === "pending" && <div className="w-3 h-3 rounded-full border border-slate-300 flex-shrink-0" />}
                     <div className="min-w-0">
                       <p className={`text-xs font-medium truncate ${
-                        ex.status === "reviewing" ? "text-indigo-700" :
-                        ex.status === "done" ? "text-slate-700" : "text-slate-400"
+                        ex.status === "reviewing" || ex.status === "extracting" ? "text-indigo-700" :
+                        ex.status === "done" || ex.status === "extracted" ? "text-slate-700" : "text-slate-400"
                       }`}>{ex.name}</p>
-                      {ex.status !== "pending" && (
+                      {(ex.status === "extracted" || ex.status === "done" || ex.status === "reviewing") && (
                         <p className="text-xs text-slate-400">{ex.questionCount} questions</p>
                       )}
                     </div>
@@ -198,11 +236,18 @@ export default function AkProcessPage() {
 
         {/* Right: Results table */}
         <div className="flex-1 min-w-0">
-          {phase === "extracting" && (
+          {phase === "scanning" && (
             <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm text-center">
               <Loader2 size={24} className="animate-spin text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">Scanning chapter for exercise questions…</p>
-              <p className="text-xs text-slate-400 mt-1">This may take a minute for large chapters.</p>
+              <p className="text-sm text-slate-500">Scanning chapter for exercises…</p>
+              <p className="text-xs text-slate-400 mt-1">Identifying all exercise sections.</p>
+            </div>
+          )}
+          {phase === "extracting" && (
+            <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm text-center">
+              <Loader2 size={24} className="animate-spin text-amber-300 mx-auto mb-3" />
+              <p className="text-sm text-slate-500">Extracting questions exercise by exercise…</p>
+              <p className="text-xs text-slate-400 mt-1">Review results will appear here once extraction is complete.</p>
             </div>
           )}
 

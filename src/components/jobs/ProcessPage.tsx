@@ -83,10 +83,12 @@ export default function ProcessPage() {
       setCurrentPage(d.starting_page - 1);
       setPhase("processing");
     } else if (type === "page_ready") {
-      const d = data as { page: number };
+      const d = data as { page: number; total_pages: number; drive_file_id?: string };
       setCurrentPage(d.page);
       const base = import.meta.env.VITE_API_URL ?? "";
-      const imageUrl = `${base}/job/${job_id}/page/${d.page}`;
+      const imageUrl = d.drive_file_id
+        ? `${base}/api/drive-image/${d.drive_file_id}`
+        : undefined;
       setPages((prev) => {
         const existing = prev.find((p) => p.page === d.page);
         if (existing) return prev.map((p) => p.page === d.page ? { ...p, imageUrl } : p);

@@ -133,6 +133,8 @@ function PageSection({
                 alt={`Page ${page}`}
                 className="w-full h-auto"
                 loading="lazy"
+                onLoad={() => console.log(`[drive-image] ✅ loaded page ${page}`, imageId)}
+                onError={(e) => console.error(`[drive-image] ❌ failed page ${page}`, imageId, (e.currentTarget as HTMLImageElement).src)}
               />
             </div>
           )}

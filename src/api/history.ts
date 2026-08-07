@@ -1,7 +1,13 @@
 import client from "./client";
 import type { Run, CicRun, CicComment, Finding, AkRun, AkQuestionResult } from "../types";
 
-export async function getHistory(tab: "review" | "cic" | "ak" = "review", workflow?: string) {
+export const HISTORY_PAGE_SIZE = 20;
+
+export async function getHistory(
+  tab: "review" | "cic" | "ak" = "review",
+  workflow?: string,
+  page: number = 1,
+) {
   const { data } = await client.get<{
     runs: Run[];
     cic_runs: CicRun[];
@@ -10,7 +16,10 @@ export async function getHistory(tab: "review" | "cic" | "ak" = "review", workfl
     review_workflows: { id: string; name: string }[];
     cic_workflows: { id: string; name: string }[];
     ak_workflows: { id: string; name: string }[];
-  }>("/api/history", { params: { tab, workflow } });
+    total: number;
+    page: number;
+    limit: number;
+  }>("/api/history", { params: { tab, workflow, page, limit: HISTORY_PAGE_SIZE } });
   return data;
 }
 

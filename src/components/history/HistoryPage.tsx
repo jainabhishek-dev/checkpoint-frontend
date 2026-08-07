@@ -1,8 +1,11 @@
 // useState not needed — tab/workflow state is in URL search params
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Loader2, FileText, GitCompare, BookOpen, Clock, AlertTriangle, XCircle } from "lucide-react";
-import { getHistory } from "../../api/history";
+import {
+  ExternalLink, Loader2, FileText, GitCompare, BookOpen, Clock, AlertTriangle, XCircle,
+  ChevronLeft, ChevronRight,
+} from "lucide-react";
+import { getHistory, HISTORY_PAGE_SIZE } from "../../api/history";
 import { runProgressInfo, type RunProgressKind } from "../../lib/runStatus";
 import type { Run, CicRun, AkRun } from "../../types";
 
@@ -17,11 +20,13 @@ export default function HistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = (searchParams.get("tab") ?? "review") as "review" | "cic" | "ak";
   const workflow = searchParams.get("workflow") ?? "";
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
   function setTab(t: "review" | "cic" | "ak") {
     const p = new URLSearchParams(searchParams);
     p.set("tab", t);
     p.delete("workflow");
+    p.delete("page");
     setSearchParams(p);
   }
 
@@ -29,18 +34,30 @@ export default function HistoryPage() {
     const p = new URLSearchParams(searchParams);
     if (wf) p.set("workflow", wf);
     else p.delete("workflow");
+    p.delete("page");
     setSearchParams(p);
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["history", tab, workflow],
-    queryFn: () => getHistory(tab, workflow || undefined),
+  function setPage(n: number) {
+    const p = new URLSearchParams(searchParams);
+    if (n <= 1) p.delete("page");
+    else p.set("page", String(n));
+    setSearchParams(p);
+  }
+
+  const { data, isLoading, isPlaceholderData } = useQuery({
+    queryKey: ["history", tab, workflow, page],
+    queryFn: () => getHistory(tab, workflow || undefined, page),
+    placeholderData: (prev) => prev,
   });
 
   const workflows =
     tab === "review" ? (data?.review_workflows ?? []) :
     tab === "cic" ? (data?.cic_workflows ?? []) :
     (data?.ak_workflows ?? []);
+
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE));
 
   return (
     <div className="p-8">
@@ -75,13 +92,57 @@ export default function HistoryPage() {
         <div className="flex items-center gap-2 text-slate-400 mt-8">
           <Loader2 size={18} className="animate-spin" /> Loading…
         </div>
-      ) : tab === "review" ? (
-        <ReviewTable runs={data?.runs ?? []} />
-      ) : tab === "cic" ? (
-        <CicTable runs={data?.cic_runs ?? []} />
       ) : (
-        <AkTable runs={data?.ak_runs ?? []} />
+        <div className={isPlaceholderData ? "opacity-50 transition-opacity" : "transition-opacity"}>
+          {tab === "review" ? (
+            <ReviewTable runs={data?.runs ?? []} />
+          ) : tab === "cic" ? (
+            <CicTable runs={data?.cic_runs ?? []} />
+          ) : (
+            <AkTable runs={data?.ak_runs ?? []} />
+          )}
+          {total > 0 && (
+            <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
+          )}
+        </div>
       )}
+    </div>
+  );
+}
+
+function Pagination({
+  page, totalPages, total, onChange,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  onChange: (page: number) => void;
+}) {
+  const start = (page - 1) * HISTORY_PAGE_SIZE + 1;
+  const end = Math.min(page * HISTORY_PAGE_SIZE, total);
+
+  return (
+    <div className="flex items-center justify-between mt-4 text-sm">
+      <p className="text-slate-400">
+        Showing {start}–{end} of {total}
+      </p>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onChange(page - 1)}
+          disabled={page <= 1}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        >
+          <ChevronLeft size={14} /> Prev
+        </button>
+        <span className="text-slate-400 px-1">Page {page} of {totalPages}</span>
+        <button
+          onClick={() => onChange(page + 1)}
+          disabled={page >= totalPages}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+        >
+          Next <ChevronRight size={14} />
+        </button>
+      </div>
     </div>
   );
 }

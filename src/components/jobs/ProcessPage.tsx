@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2, XCircle, AlertCircle, RotateCcw, MessageSquarePlus,
-  Loader2, ChevronDown, ChevronUp, FileText, History,
+  Loader2, ChevronDown, ChevronUp, FileText, History, HelpCircle,
 } from "lucide-react";
 import { useSSEJob } from "../../hooks/useSSEJob";
 import { getStreamUrl, retryJob, insertComments } from "../../api/jobs";
@@ -327,6 +327,7 @@ export default function ProcessPage() {
                   selected={selectedFindings.has(f.id)}
                   onToggle={toggleFinding}
                   showCheckbox={phase === "done" || phase === "partial"}
+                  isDone={phase === "done" || phase === "partial"}
                   showLocation={true}
                   checkpointMap={checkpointMap}
                 />
@@ -396,11 +397,19 @@ function PageCard({
                 {invalidCount} Invalid
               </span>
             )}
-            {findings.some((f) => !f.review_status) && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
-                reviewing…
-              </span>
-            )}
+            {(() => {
+              const pendingCount = findings.filter((f) => !f.review_status).length;
+              if (pendingCount === 0) return null;
+              return isDone ? (
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                  <HelpCircle size={11} /> {pendingCount} pending
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                  reviewing…
+                </span>
+              );
+            })()}
           </div>
         )}
         {isDone && findings.length === 0 && (
@@ -440,6 +449,7 @@ function PageCard({
                   selected={selectedFindings.has(f.id)}
                   onToggle={onToggle}
                   showCheckbox={isDone}
+                  isDone={isDone}
                   checkpointMap={checkpointMap}
                 />
               ))
@@ -452,7 +462,7 @@ function PageCard({
 }
 
 function FindingRow({
-  finding, selected, onToggle, showCheckbox, showLocation, checkpointMap,
+  finding, selected, onToggle, showCheckbox, showLocation, checkpointMap, isDone,
 }: {
   finding: Finding;
   selected: boolean;
@@ -460,6 +470,7 @@ function FindingRow({
   showCheckbox: boolean;
   showLocation?: boolean;
   checkpointMap: Record<string, string>;
+  isDone?: boolean;
 }) {
   const statusIcon = {
     valid: <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />,
@@ -478,6 +489,11 @@ function FindingRow({
       )}
       {finding.review_status ? (
         statusIcon[finding.review_status]
+      ) : isDone ? (
+        // Review pass already finished for this one but never returned a verdict for it
+        // (the AI's review response doesn't always cover every finding it was given) —
+        // this won't resolve on its own, so show it as permanently pending, not still-in-progress.
+        <HelpCircle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
       ) : (
         <Loader2 size={14} className="text-amber-400 animate-spin flex-shrink-0 mt-0.5" />
       )}

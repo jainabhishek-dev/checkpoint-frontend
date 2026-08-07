@@ -13,7 +13,7 @@ import type { Finding, SSEPageFindings, SSEPageReview, SSEDocumentFindings, SSED
 const SSE_EVENTS = [
   "start", "page_ready", "page_findings", "page_review",
   "done", "document_start", "document_findings", "document_review",
-  "all_done", "partial_complete", "retry_start", "error",
+  "all_done", "partial_complete", "error",
 ];
 
 type Phase =
@@ -40,7 +40,6 @@ export default function ProcessPage() {
   const { job_id } = useParams<{ job_id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const retryFrom: number | undefined = (location.state as { retry_from?: number })?.retry_from;
   const workflowId: string = (location.state as { workflow_id?: string })?.workflow_id ?? "";
 
   const { data: cpData } = useQuery({
@@ -68,7 +67,7 @@ export default function ProcessPage() {
   const [insertState, setInsertState] = useState<InsertState>({ loading: false });
 
   const streamUrl = job_id
-    ? getStreamUrl(job_id, retryFrom)
+    ? getStreamUrl(job_id)
     : null;
 
   const handleEvent = useCallback((type: string, data: unknown) => {
@@ -76,11 +75,6 @@ export default function ProcessPage() {
       const d = data as { total_pages: number; title: string };
       setTotalPages(d.total_pages);
       setTitle(d.title);
-      setPhase("processing");
-    } else if (type === "retry_start") {
-      const d = data as { starting_page: number; total_pages: number };
-      setTotalPages(d.total_pages);
-      setCurrentPage(d.starting_page - 1);
       setPhase("processing");
     } else if (type === "page_ready") {
       const d = data as { page: number; total_pages: number; drive_file_id?: string };
@@ -191,8 +185,9 @@ export default function ProcessPage() {
 
   async function handleRetry() {
     if (!job_id) return;
-    const result = await retryJob(job_id);
-    navigate(`/process/${job_id}`, { state: { retry_from: result.retry_from }, replace: true });
+    // retryJob restarts processing server-side immediately; reloading just
+    // reopens the stream so we start watching it live again.
+    await retryJob(job_id);
     window.location.reload();
   }
 

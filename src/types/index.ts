@@ -43,6 +43,8 @@ export interface Finding {
   review_comment?: string;
 }
 
+export type RunStatus = "processing" | "completed" | "failed";
+
 export interface Run {
   id: string;
   workflow_id: string;
@@ -60,6 +62,11 @@ export interface Run {
   created_at: string;
   page_prompt: string | null;
   doc_prompt: string | null;
+  status: RunStatus;
+  last_successful_page: number | null;
+  doc_check_done: boolean;
+  error_message: string | null;
+  updated_at: string;
 }
 
 export interface CicRun {

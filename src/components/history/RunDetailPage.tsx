@@ -1,25 +1,35 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, CheckCircle2, XCircle, HelpCircle, FileText,
-  ExternalLink, Loader2, ChevronDown, ChevronUp, Code2,
+  ExternalLink, Loader2, ChevronDown, ChevronUp, Code2, RotateCcw, AlertTriangle, Clock,
 } from "lucide-react";
 import { getRun, updateFindingReview } from "../../api/history";
+import { retryJob } from "../../api/jobs";
+import { runProgressInfo } from "../../lib/runStatus";
 import type { Finding } from "../../types";
 
 export default function RunDetailPage() {
   const { run_id } = useParams<{ run_id: string }>();
+  const navigate = useNavigate();
   const { data, isLoading, error } = useQuery({
     queryKey: ["run", run_id],
     queryFn: () => getRun(run_id!),
     enabled: !!run_id,
   });
 
+  const resumeMutation = useMutation({
+    mutationFn: () => retryJob(run_id!),
+    onSuccess: () => navigate(`/process/${run_id}`),
+  });
+
   if (isLoading) return <LoadingState />;
   if (error || !data) return <ErrorState />;
 
   const { run, page_findings, doc_findings, checkpoint_map, page_image_map, total_pages } = data;
+  const lastSuccessfulPage = run.last_successful_page ?? 0;
+  const progress = run.status !== "completed" ? runProgressInfo(run) : null;
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
@@ -51,10 +61,52 @@ export default function RunDetailPage() {
         </div>
       </div>
 
+      {/* Non-completed status banner */}
+      {progress && (
+        <div className={`rounded-xl p-4 mb-6 flex items-start justify-between gap-4 border ${
+          progress.kind === "processing" ? "bg-indigo-50 border-indigo-200" : "bg-amber-50 border-amber-200"
+        }`}>
+          <div className="flex items-start gap-3">
+            {progress.kind === "processing" ? (
+              <Clock size={18} className="text-indigo-500 flex-shrink-0 mt-0.5 animate-spin" />
+            ) : (
+              <AlertTriangle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className={`text-sm font-medium ${progress.kind === "processing" ? "text-indigo-800" : "text-amber-800"}`}>
+                {progress.label}
+              </p>
+              {run.error_message && (
+                <p className="text-sm text-amber-600 mt-0.5">{run.error_message}</p>
+              )}
+              {progress.kind === "processing" && (
+                <p className="text-sm text-indigo-600 mt-0.5">
+                  Still running — findings below update as pages complete. Refresh to check progress, or watch it live from the process view.
+                </p>
+              )}
+              {resumeMutation.isError && (
+                <p className="text-sm text-red-600 mt-0.5">Could not resume this run. Try again.</p>
+              )}
+            </div>
+          </div>
+          {progress.kind !== "processing" && (
+            <button
+              onClick={() => resumeMutation.mutate()}
+              disabled={resumeMutation.isPending}
+              className="flex items-center gap-1.5 text-sm font-medium text-amber-700 hover:text-amber-800 disabled:opacity-50 whitespace-nowrap"
+            >
+              {resumeMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+              Resume from page {lastSuccessfulPage + 1}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Page sections */}
       {Array.from({ length: total_pages }, (_, i) => i + 1).map((pg) => {
         const findings = page_findings[String(pg)] ?? [];
         const imageId = page_image_map[String(pg)];
+        const notYetProcessed = run.status !== "completed" && pg > lastSuccessfulPage;
         return (
           <PageSection
             key={pg}
@@ -63,6 +115,7 @@ export default function RunDetailPage() {
             imageId={imageId}
             checkpointMap={checkpoint_map}
             runId={run_id!}
+            notYetProcessed={notYetProcessed}
           />
         );
       })}
@@ -92,13 +145,14 @@ export default function RunDetailPage() {
 }
 
 function PageSection({
-  page, findings, imageId, checkpointMap, runId,
+  page, findings, imageId, checkpointMap, runId, notYetProcessed,
 }: {
   page: number;
   findings: Finding[];
   imageId?: string;
   checkpointMap: Record<string, string>;
   runId: string;
+  notYetProcessed?: boolean;
 }) {
   const [open, setOpen] = useState(findings.length > 0);
 
@@ -109,7 +163,11 @@ function PageSection({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="text-sm font-semibold text-slate-700">Page {page}</span>
-        {findings.length > 0 ? (
+        {notYetProcessed ? (
+          <span className="text-xs text-slate-400 flex items-center gap-1">
+            <Clock size={12} /> Not yet processed
+          </span>
+        ) : findings.length > 0 ? (
           <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
             {findings.length} finding{findings.length !== 1 ? "s" : ""}
           </span>

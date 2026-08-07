@@ -48,10 +48,11 @@ export async function insertComments(job_id: string, finding_ids: number[]) {
   return data;
 }
 
-export function getStreamUrl(job_id: string, retry_from?: number): string {
+export function getStreamUrl(job_id: string): string {
+  // The backend replays whatever's already saved for this run (including a
+  // prior partial run) before live-tailing, so no query param is needed here.
   const base = import.meta.env.VITE_API_URL ?? "";
-  const q = retry_from ? `?retry_from=${retry_from}` : "";
-  return `${base}/stream/${job_id}${q}`;
+  return `${base}/stream/${job_id}`;
 }
 
 export function getCicStreamUrl(job_id: string): string {

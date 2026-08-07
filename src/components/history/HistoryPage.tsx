@@ -1,9 +1,17 @@
 // useState not needed — tab/workflow state is in URL search params
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Loader2, FileText, GitCompare, BookOpen } from "lucide-react";
+import { ExternalLink, Loader2, FileText, GitCompare, BookOpen, Clock, AlertTriangle, XCircle } from "lucide-react";
 import { getHistory } from "../../api/history";
+import { runProgressInfo, type RunProgressKind } from "../../lib/runStatus";
 import type { Run, CicRun, AkRun } from "../../types";
+
+const PROGRESS_BADGE_STYLE: Record<RunProgressKind, { className: string; icon: React.ReactNode }> = {
+  completed: { className: "bg-green-100 text-green-700", icon: null },
+  failed: { className: "bg-red-100 text-red-700", icon: <XCircle size={12} /> },
+  stale: { className: "bg-amber-100 text-amber-700", icon: <AlertTriangle size={12} /> },
+  processing: { className: "bg-indigo-100 text-indigo-700", icon: <Clock size={12} className="animate-spin" /> },
+};
 
 export default function HistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -104,6 +112,7 @@ function ReviewTable({ runs }: { runs: Run[] }) {
             <Th>Workflow</Th>
             <Th>Checked by</Th>
             <Th>Date</Th>
+            <Th>Status</Th>
             <Th center>Pages</Th>
             <Th center>Findings</Th>
             <Th center>Valid</Th>
@@ -112,27 +121,36 @@ function ReviewTable({ runs }: { runs: Run[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {runs.map((run) => (
-            <tr key={run.id} className="hover:bg-slate-50 transition-colors">
-              <td className="px-4 py-3 max-w-xs" title={run.document_name ?? ""}>
-                <p className="font-medium text-slate-900 truncate">{run.document_name ?? "—"}</p>
-              </td>
-              <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{run.workflow_name}</td>
-              <td className="px-4 py-3 text-slate-500 max-w-[160px]" title={run.checked_by}>
-                <p className="truncate">{run.checked_by}</p>
-              </td>
-              <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{run.created_at?.slice(0, 16)}</td>
-              <Td center>{run.total_pages}</Td>
-              <Td center>{run.total_findings}</Td>
-              <Td center><span className="text-green-600 font-medium">{run.valid_findings}</span></Td>
-              <Td center><span className="text-red-600 font-medium">{run.invalid_findings}</span></Td>
-              <td className="px-4 py-3">
-                <Link to={`/history/${run.id}`} className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 whitespace-nowrap">
-                  View <ExternalLink size={12} />
-                </Link>
-              </td>
-            </tr>
-          ))}
+          {runs.map((run) => {
+            const progress = runProgressInfo(run);
+            const badge = PROGRESS_BADGE_STYLE[progress.kind];
+            return (
+              <tr key={run.id} className="hover:bg-slate-50 transition-colors">
+                <td className="px-4 py-3 max-w-xs" title={run.document_name ?? ""}>
+                  <p className="font-medium text-slate-900 truncate">{run.document_name ?? "—"}</p>
+                </td>
+                <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{run.workflow_name}</td>
+                <td className="px-4 py-3 text-slate-500 max-w-[160px]" title={run.checked_by}>
+                  <p className="truncate">{run.checked_by}</p>
+                </td>
+                <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{run.created_at?.slice(0, 16)}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
+                    {badge.icon}{progress.label}
+                  </span>
+                </td>
+                <Td center>{run.total_pages}</Td>
+                <Td center>{run.total_findings}</Td>
+                <Td center><span className="text-green-600 font-medium">{run.valid_findings}</span></Td>
+                <Td center><span className="text-red-600 font-medium">{run.invalid_findings}</span></Td>
+                <td className="px-4 py-3">
+                  <Link to={`/history/${run.id}`} className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1 whitespace-nowrap">
+                    View <ExternalLink size={12} />
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

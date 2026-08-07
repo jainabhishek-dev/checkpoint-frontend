@@ -43,7 +43,18 @@ export interface Finding {
   review_comment?: string;
 }
 
-export type RunStatus = "processing" | "completed" | "failed";
+export type RunStatus = "processing" | "completed" | "failed" | "cancelled";
+
+export interface OngoingTask {
+  job_id: string;
+  document_name: string | null;
+  workflow_name: string;
+  checked_by: string;
+  total_pages: number | null;
+  last_successful_page: number | null;
+  started_at: string | null;
+  updated_at: string;
+}
 
 export interface Run {
   id: string;

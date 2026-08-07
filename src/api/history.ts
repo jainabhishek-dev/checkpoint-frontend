@@ -1,5 +1,5 @@
 import client from "./client";
-import type { Run, CicRun, CicComment, Finding, AkRun, AkQuestionResult } from "../types";
+import type { Run, CicRun, CicComment, Finding, AkRun, AkQuestionResult, OngoingTask } from "../types";
 
 export const HISTORY_PAGE_SIZE = 20;
 
@@ -89,5 +89,15 @@ export async function adminAddAdmin(email: string) {
 
 export async function adminDeleteAdmin(email: string) {
   const { data } = await client.post(`/api/admin/admins/${email}/delete`);
+  return data;
+}
+
+export async function adminGetOngoingTasks() {
+  const { data } = await client.get<{ tasks: OngoingTask[] }>("/api/admin/ongoing-tasks");
+  return data;
+}
+
+export async function adminCancelTask(job_id: string) {
+  const { data } = await client.post(`/api/admin/ongoing-tasks/${job_id}/cancel`);
   return data;
 }

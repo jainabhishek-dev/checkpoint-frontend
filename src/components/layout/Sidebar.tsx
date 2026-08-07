@@ -5,6 +5,7 @@ import {
   CheckSquare,
   GitBranch,
   Users,
+  Activity,
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
@@ -23,6 +24,7 @@ const NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem[] = [
+  { to: "/admin/ongoing-tasks", label: "Ongoing Tasks", icon: <Activity size={18} />, adminOnly: true },
   { to: "/admin/workflows", label: "Edit/Add Workflows", icon: <GitBranch size={18} />, adminOnly: true },
   { to: "/admin/checkpoints", label: "Edit/Add Checkpoints", icon: <CheckSquare size={18} />, adminOnly: true },
   { to: "/admin/admins", label: "Edit/Add Admins", icon: <Users size={18} />, adminOnly: true },

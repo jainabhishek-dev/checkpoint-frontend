@@ -10,7 +10,7 @@ export function isRunStale(run: Run): boolean {
   return run.status === "processing" && Date.now() - new Date(run.updated_at).getTime() > STALE_THRESHOLD_MS;
 }
 
-export type RunProgressKind = "completed" | "failed" | "stale" | "processing";
+export type RunProgressKind = "completed" | "failed" | "cancelled" | "stale" | "processing";
 
 export interface RunProgressInfo {
   kind: RunProgressKind;
@@ -23,6 +23,9 @@ export function runProgressInfo(run: Run): RunProgressInfo {
   }
   if (run.status === "failed") {
     return { kind: "failed", label: `Stopped at page ${run.last_successful_page ?? 0}` };
+  }
+  if (run.status === "cancelled") {
+    return { kind: "cancelled", label: `Cancelled at page ${run.last_successful_page ?? 0}` };
   }
   if (isRunStale(run)) {
     return { kind: "stale", label: `Stuck at page ${run.last_successful_page ?? 0}` };

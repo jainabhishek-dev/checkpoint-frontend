@@ -2,7 +2,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ExternalLink, Loader2, FileText, GitCompare, BookOpen, Clock, AlertTriangle, XCircle,
+  ExternalLink, Loader2, FileText, GitCompare, BookOpen, Clock, AlertTriangle, XCircle, Ban,
   ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getHistory, HISTORY_PAGE_SIZE } from "../../api/history";
@@ -12,6 +12,7 @@ import type { Run, CicRun, AkRun } from "../../types";
 const PROGRESS_BADGE_STYLE: Record<RunProgressKind, { className: string; icon: React.ReactNode }> = {
   completed: { className: "bg-green-100 text-green-700", icon: null },
   failed: { className: "bg-red-100 text-red-700", icon: <XCircle size={12} /> },
+  cancelled: { className: "bg-slate-200 text-slate-600", icon: <Ban size={12} /> },
   stale: { className: "bg-amber-100 text-amber-700", icon: <AlertTriangle size={12} /> },
   processing: { className: "bg-indigo-100 text-indigo-700", icon: <Clock size={12} className="animate-spin" /> },
 };

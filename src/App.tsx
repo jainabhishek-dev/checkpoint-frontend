@@ -13,6 +13,7 @@ import AkRunDetailPage from "./components/history/AkRunDetailPage";
 import CheckpointsPage from "./components/admin/CheckpointsPage";
 import WorkflowsPage from "./components/admin/WorkflowsPage";
 import AdminsPage from "./components/admin/AdminsPage";
+import OngoingTasksPage from "./components/admin/OngoingTasksPage";
 import { Loader2 } from "lucide-react";
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/admin/workflows" element={<WorkflowsPage />} />
             <Route path="/admin/checkpoints" element={<CheckpointsPage />} />
             <Route path="/admin/admins" element={<AdminsPage />} />
+            <Route path="/admin/ongoing-tasks" element={<OngoingTasksPage />} />
           </Route>
         </Route>
       </Route>
